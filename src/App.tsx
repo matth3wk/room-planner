@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { OrbitControls } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
+import { Bed, BedsideTable } from './Furniture'
 import './App.css'
 
 // All measurements are in metres: one Three.js unit = one metre.
@@ -21,6 +22,9 @@ function App() {
   const matchingPreset = bedroomPresets.find(
     (preset) => preset.width === roomWidth && preset.depth === roomDepth,
   )
+  // Keep the furniture beside the back-left corner as the room changes size.
+  const bedX = -roomWidth / 2 + 0.65
+  const bedZ = -roomDepth / 2 + 1
 
   return (
     <div className="planner">
@@ -80,7 +84,7 @@ function App() {
         <p>Drag to rotate · Scroll to zoom · Right-drag to pan</p>
       </section>
       <main className="scene-container" aria-label="3D room preview">
-        <Canvas className="scene" camera={{ position: [14, 12, 14], fov: 45 }}>
+        <Canvas className="scene" camera={{ position: [6, 18, 6], fov: 45 }}>
           <ambientLight intensity={0.6} />
           <directionalLight position={[3, 5, 2]} intensity={1.5} />
 
@@ -109,6 +113,9 @@ function App() {
             <boxGeometry args={[wallThickness, wallHeight, roomDepth]} />
             <meshStandardMaterial color="#eee9df" />
           </mesh>
+
+          <Bed position={[bedX, 0, bedZ]} />
+          <BedsideTable position={[bedX + 0.9, 0, -roomDepth / 2 + 0.3]} />
 
           <OrbitControls target={[0, 1, 0]} />
         </Canvas>
