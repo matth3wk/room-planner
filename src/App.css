@@ -9,6 +9,8 @@
 .room-controls {
   padding: 16px 24px;
   background: #f5f7fa;
+  max-height: 45%;
+  overflow-y: auto;
 }
 
 .room-controls h1 {
@@ -28,6 +30,68 @@
 .room-controls p {
   margin: 4px 0;
   font-size: 14px;
+}
+
+.dimension-options {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  margin-bottom: 12px;
+}
+
+.preset-controls {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.preset-controls legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.preset-button {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid #8090a0;
+  border-radius: 6px;
+  background: white;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.preset-button:hover {
+  background: #edf3fa;
+}
+
+.preset-button[aria-pressed='true'] {
+  border-color: #245b96;
+  background: #dceafb;
+}
+
+.preset-button:focus-visible {
+  outline: 2px solid #245b96;
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .dimension-options {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
 
 .scene-container {

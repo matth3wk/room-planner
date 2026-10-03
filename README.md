@@ -1,4 +1,34 @@
-# React + TypeScript + Vite
+# 3D Room Planner
+
+Run `npm run dev` to launch the app, `npm run build` to type-check and build,
+and `npm run lint` to check code quality.
+
+## Bedroom presets
+
+One scene unit represents one metre. Presets set the inside floor width (X)
+and depth (Z); all currently use the same 3 m wall height (Y).
+The default is Standard bedroom. Sliders can customise any preset, and the UI
+shows Custom room when the dimensions no longer match a preset.
+
+| Preset | Width × depth | Floor area |
+| --- | --- | --- |
+| Small bedroom | 2.5 × 3.2 m | 8 m² |
+| Standard bedroom | 3 × 4 m | 12 m² |
+| Loft bedroom | 4 × 5 m | 20 m² |
+
+These are representative starting footprints, not measured UK-wide averages.
+The small and standard choices sit above the single/double bedroom floor-area
+benchmarks in [England's nationally described space standard](https://www.gov.uk/government/publications/technical-housing-standards-nationally-described-space-standard/technical-housing-standards-nationally-described-space-standard):
+7.5 m² for a single and 11.5 m² for a double. Those figures are minimums within
+that standard, not averages or a UK-wide specification.
+
+The loft footprint is an illustrative larger room, not a published average.
+[Building Control Partnership's loft guidance](https://www.buildingcontrolpartnershiphants.gov.uk/guides/raising-the-roof-with-a-loft-conversion/)
+explains that the roof, available headroom and stairs affect what fits in a loft.
+The current preset changes floor size only: sloped ceilings, stairs and eaves
+are not modelled.
+
+## Original Vite template notes
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
