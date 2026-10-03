@@ -3,6 +3,19 @@
 Run `npm run dev` to launch the app, `npm run build` to type-check and build,
 and `npm run lint` to check code quality.
 
+## Furniture controls
+
+Use the sidebar to add a bed or bedside table. Click an item in the room or
+its sidebar entry to select it. Choose Move to drag the X/Z arrows or floor
+handle; choose Rotate to drag the Y-axis ring (15-degree steps).
+Furniture stays at floor level and its rotated footprint is kept inside the
+room. Camera orbit pauses while dragging. Resizing the room clamps furniture
+back inside; if its current angle cannot fit, it returns to zero rotation.
+
+Delete selected furniture with the sidebar button, Delete, or Backspace.
+Keyboard deletion is ignored while editing inputs or dragging a gizmo.
+Run `npm test` with Node.js 22.6+ to check floor and rotated-wall boundaries.
+
 ## Bedroom presets
 
 One scene unit represents one metre. Presets set the inside floor width (X)
