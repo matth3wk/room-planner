@@ -1,36 +1,9 @@
-import { constrainToRoom } from './furnitureBounds.ts'
-
-export type FurnitureType = 'bed' | 'bedsideTable'
-export type FurnitureItem = {
-  id: string
-  type: FurnitureType
-  position: [number, number, number]
-  rotation: number
-}
-export type Layout = {
-  roomWidth: number
-  roomDepth: number
-  furniture: FurnitureItem[]
-}
+import { furnitureLibrary, roomMeasurements } from '../domain/catalog.ts'
+import { normalizeLayout } from '../domain/layout.ts'
+import type { FurnitureItem, Layout } from '../domain/types'
 
 export const storageKey = 'room-planner.layout.v1'
-export const furnitureLibrary = {
-  bed: { name: 'Bed', width: 0.98, depth: 2 },
-  bedsideTable: { name: 'Bedside table', width: 0.45, depth: 0.4 },
-}
-
-// Store the same constrained positions that the user sees in the room.
-export function normalizeLayout(layout: Layout): Layout {
-  return {
-    ...layout,
-    furniture: layout.furniture.map((item) => ({
-      ...item,
-      ...constrainToRoom(item.position, item.rotation, furnitureLibrary[item.type], {
-        width: layout.roomWidth, depth: layout.roomDepth,
-      }),
-    })),
-  }
-}
+type LayoutStorage = Pick<Storage, 'getItem' | 'setItem'>
 
 export function serializeLayout(layout: Layout): string {
   return JSON.stringify({ version: 1, layout })
@@ -41,7 +14,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 function isMeasurement(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 2 && value <= 12
+  return typeof value === 'number' && Number.isFinite(value) && value >= roomMeasurements.min && value <= roomMeasurements.max
 }
 
 // localStorage contains strings, so check the parsed data before using it.
@@ -57,7 +30,7 @@ export function parseLayout(text: string): Layout {
   const ids = new Set<string>()
   const furniture = layout.furniture.map((item): FurnitureItem => {
     if (!isObject(item) || typeof item.id !== 'string' || !item.id || ids.has(item.id)
-      || (item.type !== 'bed' && item.type !== 'bedsideTable')
+      || !isFurnitureType(item.type)
       || !Array.isArray(item.position) || item.position.length !== 3
       || !item.position.every((value) => typeof value === 'number' && Number.isFinite(value))
       || typeof item.rotation !== 'number' || !Number.isFinite(item.rotation)) {
@@ -72,4 +45,18 @@ export function parseLayout(text: string): Layout {
     }
   })
   return normalizeLayout({ roomWidth: layout.roomWidth, roomDepth: layout.roomDepth, furniture })
+}
+
+function isFurnitureType(value: unknown): value is FurnitureItem['type'] {
+  return typeof value === 'string' && Object.hasOwn(furnitureLibrary, value)
+}
+
+// Passing storage explicitly also makes failures easy to exercise in tests.
+export function saveLayoutToStorage(layout: Layout, storage: LayoutStorage = localStorage): void {
+  storage.setItem(storageKey, serializeLayout(layout))
+}
+
+export function loadLayoutFromStorage(storage: LayoutStorage = localStorage): Layout | null {
+  const text = storage.getItem(storageKey)
+  return text === null ? null : parseLayout(text)
 }

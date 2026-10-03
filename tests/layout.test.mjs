@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { parseLayout, serializeLayout } from '../src/layout.ts'
+import { parseLayout, serializeLayout } from '../src/services/layoutStorage.ts'
 
 const layout = {
   roomWidth: 3, roomDepth: 4,

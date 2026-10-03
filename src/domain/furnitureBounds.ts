@@ -1,5 +1,4 @@
-type Size = { width: number; depth: number }
-type Position = [number, number, number]
+import type { Position, Size } from './types'
 
 // Axis-aligned floor footprint of a rectangle rotated around Y.
 export function getFootprint(size: Size, rotation: number): Size {

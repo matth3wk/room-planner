@@ -1,30 +1,8 @@
-import { Edges } from '@react-three/drei'
-
-// Positions use [X, Y, Z], measured in metres.
-type FurnitureProps = {
-  position: [number, number, number]
-  selected: boolean
-  onSelect: () => void
-}
-
-function SelectionOutline({ size }: { size: [number, number, number] }) {
-  return (
-    <mesh position={[0, size[1] / 2, 0]} raycast={() => {}}>
-      <boxGeometry args={[size[0] + 0.06, size[1] + 0.06, size[2] + 0.06]} />
-      <meshBasicMaterial visible={false} />
-      <Edges color="#f59e0b" depthTest={false} raycast={() => {}} />
-    </mesh>
-  )
-}
-
 // A compact bed with an overall footprint of 0.98 × 2 m.
 // Each group is positioned at floor level; its parts use local coordinates.
-export function Bed({ position, selected, onSelect }: FurnitureProps) {
+export function Bed() {
   return (
-    <group position={position} onClick={(event) => {
-      event.stopPropagation()
-      onSelect()
-    }}>
+    <group>
       <mesh position={[0, 0.15, 0]}>
         <boxGeometry args={[0.9, 0.3, 1.9]} />
         <meshStandardMaterial color="#79553a" />
@@ -45,18 +23,14 @@ export function Bed({ position, selected, onSelect }: FurnitureProps) {
         <boxGeometry args={[0.98, 1, 0.08]} />
         <meshStandardMaterial color="#79553a" />
       </mesh>
-      {selected && <SelectionOutline size={[0.98, 1, 2]} />}
     </group>
   )
 }
 
 // A 0.45 × 0.4 m bedside table, 0.55 m tall.
-export function BedsideTable({ position, selected, onSelect }: FurnitureProps) {
+export function BedsideTable() {
   return (
-    <group position={position} onClick={(event) => {
-      event.stopPropagation()
-      onSelect()
-    }}>
+    <group>
       <mesh position={[0, 0.505, 0]}>
         <boxGeometry args={[0.45, 0.09, 0.4]} />
         <meshStandardMaterial color="#a67850" />
@@ -81,7 +55,6 @@ export function BedsideTable({ position, selected, onSelect }: FurnitureProps) {
         <boxGeometry args={[0.06, 0.46, 0.06]} />
         <meshStandardMaterial color="#79553a" />
       </mesh>
-      {selected && <SelectionOutline size={[0.45, 0.55, 0.4]} />}
     </group>
   )
 }

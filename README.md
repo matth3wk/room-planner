@@ -58,78 +58,29 @@ explains that the roof, available headroom and stairs affect what fits in a loft
 The current preset changes floor size only: sloped ceilings, stairs and eaves
 are not modelled.
 
-## Original Vite template notes
+## Code structure
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+- `src/App.tsx` connects the UI to the planner and 3D scene.
+- `src/components/` contains the room controls, toolbar and furniture sidebar.
+- `src/scene/` contains the room shell, furniture models and transform controls.
+- `src/hooks/` owns React state, layout history and keyboard shortcuts.
+- `src/domain/` contains shared types, dimensions and pure layout calculations.
+- `src/services/layoutStorage.ts` validates and reads/writes browser saves.
+- `src/styles/planner.css` keeps the existing planner styling.
 
-Currently, two official plugins are available:
+A component receives data and callbacks through **props** (similar to method
+parameters). A **custom hook** is a function that combines React state and
+behaviour; `usePlanner` is called once in App, so there is one source of truth.
+Components request changes through callbacks rather than editing layout data.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Domain functions return new layouts without changing their inputs. This
+keeps previous snapshots safe for Undo and allows tests without React or WebGL.
+The storage service accepts a storage object for tests but uses localStorage
+in the app. The save key and version remain unchanged.
 
-## React Compiler
+To add a furniture type, update `domain/types.ts`, `domain/catalog.ts` and
+`scene/FurnitureModels.tsx`, then choose its model in
+`scene/FurnitureInstance.tsx`. The sidebar uses the catalog for labels and sizes.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+Run `npm test` for layout, placement, storage and boundary checks.
+Run `npm run lint` and `npm run build` before committing changes.

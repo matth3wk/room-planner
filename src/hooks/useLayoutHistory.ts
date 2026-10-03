@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
-import { normalizeLayout } from './layout'
-import type { Layout } from './layout'
+import { normalizeLayout } from '../domain/layout'
+import type { Layout } from '../domain/types'
 
 // Keep layout snapshots together so Undo restores room size and furniture.
 export function useLayoutHistory(initialLayout: Layout) {
@@ -10,8 +10,8 @@ export function useLayoutHistory(initialLayout: Layout) {
   const current = useRef(initialLayout)
   const changeStart = useRef<Layout | null>(null)
 
-  function changeLayout(next: Layout) {
-    next = normalizeLayout(next)
+  function changeLayout(update: Layout | ((current: Layout) => Layout)) {
+    const next = normalizeLayout(typeof update === 'function' ? update(current.current) : update)
     const previous = current.current
     if (JSON.stringify(previous) === JSON.stringify(next)) return
     if (!changeStart.current) setPast((history) => [...history, previous].slice(-50))

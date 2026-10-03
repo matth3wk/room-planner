@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { constrainToRoom } from '../src/furnitureBounds.ts'
+import { constrainToRoom } from '../src/domain/furnitureBounds.ts'
 
 const bed = { width: 0.98, depth: 2 }
 
