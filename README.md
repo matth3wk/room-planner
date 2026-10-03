@@ -3,6 +3,23 @@
 Run `npm run dev` to launch the app, `npm run build` to type-check and build,
 and `npm run lint` to check code quality.
 
+## Save, load and undo
+
+Save layout stores one room in this browser's local storage, replacing the
+previous save. Load layout restores its dimensions, furniture, positions and
+rotations. After refreshing or reopening the app, click Load layout to restore
+your save. Saves belong to the browser and site address (including its port).
+
+Undo or Ctrl+Z / Command+Z restores the last layout change. Adding, deleting,
+room presets, dimensions, movement, rotation and loading are undoable. A slider
+or furniture drag counts as one change. The last 50 changes are kept in memory;
+refreshing clears undo history but retains the saved layout. Saving does not
+add an undo step. Selection and camera movement do not add undo steps either.
+
+Malformed saves and unavailable/full browser storage show an error without
+discarding the current layout. Use `npm test` to run storage validation and
+floor-boundary tests.
+
 ## Furniture controls
 
 Use the sidebar to add a bed or bedside table. Click an item in the room or

@@ -18,6 +18,22 @@
   font-size: 20px;
 }
 
+.layout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.layout-actions span {
+  font-size: 14px;
+}
+
+.room-controls .layout-message {
+  margin-bottom: 12px;
+}
+
 .room-controls label {
   display: block;
 }

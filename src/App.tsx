@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { OrbitControls } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { FurnitureInstance } from './FurnitureInstance'
-import { constrainToRoom, getFootprint } from './furnitureBounds'
+import { getFootprint } from './furnitureBounds'
+import { furnitureLibrary, parseLayout, serializeLayout, storageKey } from './layout'
+import type { FurnitureItem, FurnitureType, Layout } from './layout'
+import { useLayoutHistory } from './useLayoutHistory'
 import './App.css'
 
 // All measurements are in metres: one Three.js unit = one metre.
@@ -17,28 +20,21 @@ const bedroomPresets = [
 ]
 const defaultPreset = bedroomPresets[1]
 
-type FurnitureType = 'bed' | 'bedsideTable'
-type FurnitureItem = {
-  id: string
-  type: FurnitureType
-  position: [number, number, number]
-  rotation: number
-}
-
-const furnitureLibrary = {
-  bed: { name: 'Bed', width: 0.98, depth: 2 },
-  bedsideTable: { name: 'Bedside table', width: 0.45, depth: 0.4 },
+const initialLayout: Layout = {
+  roomWidth: defaultPreset.width,
+  roomDepth: defaultPreset.depth,
+  furniture: [
+    { id: 'starter-bed', type: 'bed', position: [-0.85, 0, -1], rotation: 0 },
+    { id: 'starter-table', type: 'bedsideTable', position: [0.05, 0, -1.7], rotation: 0 },
+  ],
 }
 
 function App() {
-  const [roomWidth, setRoomWidth] = useState(defaultPreset.width)
-  const [roomDepth, setRoomDepth] = useState(defaultPreset.depth)
-  const [furniture, setFurniture] = useState<FurnitureItem[]>([
-    { id: 'starter-bed', type: 'bed', position: [-0.85, 0, -1], rotation: 0 },
-    { id: 'starter-table', type: 'bedsideTable', position: [0.05, 0, -1.7], rotation: 0 },
-  ])
+  const { layout, changeLayout, beginChange, endChange, undo, canUndo, isChanging } = useLayoutHistory(initialLayout)
+  const { roomWidth, roomDepth, furniture } = layout
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [libraryMessage, setLibraryMessage] = useState('')
+  const [layoutMessage, setLayoutMessage] = useState('')
   const [transformMode, setTransformMode] = useState<'translate' | 'rotate'>('translate')
   const [isDragging, setIsDragging] = useState(false)
   const isTransforming = useRef(false)
@@ -48,29 +44,32 @@ function App() {
     function handleKeyDown(event: KeyboardEvent) {
       const target = event.target
       if (target instanceof HTMLElement
-        && (target.closest('input, textarea, select') || target.isContentEditable)) return
-      if (!selectedId || isDragging || event.ctrlKey || event.metaKey || event.altKey) return
+        && (target.closest('input, textarea, select') || target.isContentEditable)
+        && !(target instanceof HTMLInputElement && target.type === 'range')) return
+      if (isChanging || isDragging || event.altKey) return
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !event.shiftKey) {
+        event.preventDefault()
+        undo()
+        setSelectedId(null)
+        setLibraryMessage('')
+        setLayoutMessage(canUndo ? 'Last change undone.' : 'Nothing to undo.')
+        return
+      }
+      if (target instanceof HTMLInputElement) return
+      if (!selectedId || event.ctrlKey || event.metaKey) return
       if (event.key !== 'Delete' && event.key !== 'Backspace') return
       event.preventDefault()
-      setFurniture((items) => items.filter((item) => item.id !== selectedId))
+      changeLayout({ ...layout, furniture: furniture.filter((item) => item.id !== selectedId) })
       setSelectedId(null)
       setLibraryMessage('Furniture deleted.')
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedId, isDragging])
+  }, [selectedId, isDragging, isChanging, undo, canUndo, changeLayout, layout, furniture])
   const matchingPreset = bedroomPresets.find(
     (preset) => preset.width === roomWidth && preset.depth === roomDepth,
   )
-  // Clamp positions to the floor when the room shrinks.
-  const placedFurniture = furniture.map<FurnitureItem>((item) => {
-    return {
-      ...item,
-      ...constrainToRoom(item.position, item.rotation, furnitureLibrary[item.type], {
-        width: roomWidth, depth: roomDepth,
-      }),
-    }
-  })
+  const placedFurniture = furniture
   const selectedItem = placedFurniture.find((item) => item.id === selectedId)
 
   function overlapsFurniture(x: number, z: number, type: FurnitureType, other: FurnitureItem) {
@@ -96,6 +95,8 @@ function App() {
   function handleDraggingChange(dragging: boolean) {
     isTransforming.current = true
     setIsDragging(dragging)
+    if (dragging) beginChange()
+    else endChange()
     if (!dragging) {
       // Ignore the click following a gizmo drag before permitting deselection.
       requestAnimationFrame(() => { isTransforming.current = false })
@@ -103,12 +104,12 @@ function App() {
   }
 
   function updateFurniture(id: string, position: [number, number, number], rotation: number) {
-    setFurniture(placedFurniture.map((item) => item.id === id ? { ...item, position, rotation } : item))
+    changeLayout({ ...layout, furniture: placedFurniture.map((item) => item.id === id ? { ...item, position, rotation } : item) })
   }
 
   function deleteSelectedFurniture() {
     if (!selectedId || isDragging) return
-    setFurniture(furniture.filter((item) => item.id !== selectedId))
+    changeLayout({ ...layout, furniture: furniture.filter((item) => item.id !== selectedId) })
     setSelectedId(null)
     setLibraryMessage('Furniture deleted.')
   }
@@ -123,7 +124,7 @@ function App() {
       for (let x = -xLimit; x <= xLimit + 0.000001; x += 0.2) {
         if (placedFurniture.some((other) => overlapsFurniture(x, z, type, other))) continue
         const id = crypto.randomUUID()
-        setFurniture([...placedFurniture, { id, type, position: [x, 0, z], rotation: 0 }])
+        changeLayout({ ...layout, furniture: [...placedFurniture, { id, type, position: [x, 0, z], rotation: 0 }] })
         setSelectedId(id)
         setLibraryMessage(`${size.name} added.`)
         return
@@ -132,10 +133,50 @@ function App() {
     setLibraryMessage(`No free space for another ${size.name.toLowerCase()}. Increase the room dimensions.`)
   }
 
+  function saveLayout() {
+    try {
+      localStorage.setItem(storageKey, serializeLayout(layout))
+      setLayoutMessage('Layout saved in this browser.')
+    } catch {
+      setLayoutMessage('Could not save. Browser storage may be unavailable or full.')
+    }
+  }
+
+  function loadLayout() {
+    try {
+      const text = localStorage.getItem(storageKey)
+      if (text === null) {
+        setLayoutMessage('No saved layout in this browser yet.')
+        return
+      }
+      const saved = parseLayout(text)
+      changeLayout(saved)
+      setSelectedId(null)
+      setLibraryMessage('')
+      setLayoutMessage('Saved layout loaded.')
+    } catch {
+      setLayoutMessage('Could not load. Saved data may be invalid or browser storage unavailable.')
+    }
+  }
+
+  function undoChange() {
+    undo()
+    setSelectedId(null)
+    setLibraryMessage('')
+    setLayoutMessage('Last change undone.')
+  }
+
   return (
     <div className="planner">
       <section className="room-controls" aria-labelledby="room-title">
         <h1 id="room-title">Room dimensions</h1>
+        <div className="layout-actions" role="group" aria-label="Save, load and undo">
+          <button type="button" className="preset-button" disabled={isChanging} onClick={saveLayout}>Save layout</button>
+          <button type="button" className="preset-button" disabled={isChanging} onClick={loadLayout}>Load layout</button>
+          <button type="button" className="preset-button" disabled={!canUndo} onClick={undoChange}>Undo</button>
+          <span>Undo: Ctrl+Z / ⌘Z</span>
+        </div>
+        <p role="status" className="layout-message">{layoutMessage}</p>
         <div className="dimension-options">
           <fieldset className="preset-controls">
             <legend>Bedroom presets</legend>
@@ -146,10 +187,8 @@ function App() {
                   type="button"
                   className="preset-button"
                   aria-pressed={matchingPreset === preset}
-                  onClick={() => {
-                    setRoomWidth(preset.width)
-                    setRoomDepth(preset.depth)
-                  }}
+                  disabled={isDragging}
+                  onClick={() => changeLayout({ ...layout, roomWidth: preset.width, roomDepth: preset.depth })}
                 >
                   <span>{preset.name}</span>
                   <span>{preset.width.toFixed(1)} × {preset.depth.toFixed(1)} m</span>
@@ -167,7 +206,14 @@ function App() {
               max="12"
               step="0.1"
               value={roomWidth}
-              onChange={(event) => setRoomWidth(Number(event.target.value))}
+              disabled={isDragging}
+              onPointerDown={beginChange}
+              onPointerUp={endChange}
+              onPointerCancel={endChange}
+              onBlur={endChange}
+              onKeyDown={(event) => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) beginChange() }}
+              onKeyUp={endChange}
+              onChange={(event) => changeLayout({ ...layout, roomWidth: Number(event.target.value) })}
               aria-valuetext={`${roomWidth.toFixed(1)} metres`}
             />
             <label htmlFor="room-depth">Depth (Z): {roomDepth.toFixed(1)} m</label>
@@ -178,7 +224,14 @@ function App() {
               max="12"
               step="0.1"
               value={roomDepth}
-              onChange={(event) => setRoomDepth(Number(event.target.value))}
+              disabled={isDragging}
+              onPointerDown={beginChange}
+              onPointerUp={endChange}
+              onPointerCancel={endChange}
+              onBlur={endChange}
+              onKeyDown={(event) => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) beginChange() }}
+              onKeyUp={endChange}
+              onChange={(event) => changeLayout({ ...layout, roomDepth: Number(event.target.value) })}
               aria-valuetext={`${roomDepth.toFixed(1)} metres`}
             />
             <p aria-live="polite">
@@ -193,11 +246,11 @@ function App() {
         <aside className="furniture-sidebar" aria-labelledby="library-title">
           <h2 id="library-title">Furniture library</h2>
           <p>Click an item to add it.</p>
-          <button className="preset-button library-button" type="button" onClick={() => addFurniture('bed')}>
+          <button className="preset-button library-button" type="button" disabled={isChanging} onClick={() => addFurniture('bed')}>
             <span>Add bed</span>
             <span>0.98 × 2 m</span>
           </button>
-          <button className="preset-button library-button" type="button" onClick={() => addFurniture('bedsideTable')}>
+          <button className="preset-button library-button" type="button" disabled={isChanging} onClick={() => addFurniture('bedsideTable')}>
             <span>Add bedside table</span>
             <span>0.45 × 0.4 m</span>
           </button>
@@ -211,6 +264,7 @@ function App() {
                   className="preset-button library-button"
                   type="button"
                   aria-pressed={item.id === selectedId}
+                  disabled={isDragging}
                   onClick={() => setSelectedId(item.id)}
                 >
                   {furnitureLibrary[item.type].name} {index + 1}
